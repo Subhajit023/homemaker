@@ -13,21 +13,29 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 
 import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
+import { useT } from '@/i18n';
 
 export default function AppTabs() {
+  const t = useT();
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="index" href={'/' as Href} asChild>
-            <TabButton>Home</TabButton>
+            <TabButton>{t.tabs.home}</TabButton>
           </TabTrigger>
           <TabTrigger name="inventory" href="/inventory" asChild>
-            <TabButton>My items</TabButton>
+            <TabButton>{t.tabs.items}</TabButton>
           </TabTrigger>
           <TabTrigger name="restock" href="/restock" asChild>
-            <TabButton>Shopping</TabButton>
+            <TabButton>{t.tabs.shopping}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="shared" href="/shared" asChild>
+            <TabButton>{t.tabs.plan}</TabButton>
+          </TabTrigger>
+          <TabTrigger name="board" href="/board" asChild>
+            <TabButton>{t.tabs.board}</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>

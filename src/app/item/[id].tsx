@@ -3,6 +3,7 @@ import { useState, type ReactNode } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, LinearTransition, ZoomIn } from 'react-native-reanimated';
 
+import { SurprisePicker } from '@/components/family/surprise';
 import { ItemAvatar } from '@/components/inventory/pill';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -19,10 +20,10 @@ import {
   PriorityMeta,
   StatusMeta,
 } from '@/features/inventory/meta';
-import { QUICK_ADD } from '@/features/inventory/sample-data';
 import type { Item, ItemInput, Priority } from '@/features/inventory/types';
 import { useTheme } from '@/hooks/use-theme';
 import { pressFeedback, successFeedback, tapFeedback, warningFeedback } from '@/lib/haptics';
+import { useContent, useT } from '@/i18n';
 
 type FormState = {
   name: string;
@@ -33,6 +34,7 @@ type FormState = {
   unit: string;
   minQuantity: string;
   notes: string;
+  hiddenFrom: string[];
 };
 
 function toForm(item: Item | ItemInput | undefined): FormState {
@@ -45,6 +47,7 @@ function toForm(item: Item | ItemInput | undefined): FormState {
     unit: item?.unit ?? 'pcs',
     minQuantity: item ? formatQty(item.minQuantity) : '1',
     notes: item?.notes ?? '',
+    hiddenFrom: item?.hiddenFrom ?? [],
   };
 }
 
@@ -58,6 +61,8 @@ export default function ItemScreen() {
   const { getItem, addItem, updateItem, removeItem, restoreItem } = useInventory();
   const theme = useTheme();
   const toast = useToast();
+  const t = useT();
+  const { quickAdd } = useContent();
 
   const isNew = id === 'new';
   const existing = isNew ? undefined : getItem(id);
@@ -69,9 +74,9 @@ export default function ItemScreen() {
   if (!isNew && !existing) {
     return (
       <ThemedView style={styles.centered}>
-        <Stack.Screen options={{ title: 'Not found' }} />
+        <Stack.Screen options={{ title: t.itemForm.notFoundTitle }} />
         <ThemedText style={styles.bigEmoji}>🤷</ThemedText>
-        <ThemedText themeColor="textSecondary">This item has been removed.</ThemedText>
+        <ThemedText themeColor="textSecondary">{t.itemForm.removedMessage}</ThemedText>
       </ThemedView>
     );
   }
@@ -108,9 +113,9 @@ export default function ItemScreen() {
     const name = form.name.trim();
     const quantity = parseAmount(form.quantity);
     const minQuantity = parseAmount(form.minQuantity);
-    if (!name) return fail('Please give it a name, e.g. “Milk”.');
-    if (quantity === null) return fail('“How much do you have” should be a number.');
-    if (minQuantity === null) return fail('“Remind me below” should be a number.');
+    if (!name) return fail(t.itemForm.errName);
+    if (quantity === null) return fail(t.itemForm.errQuantity);
+    if (minQuantity === null) return fail(t.itemForm.errMin);
 
     const input: ItemInput = {
       name,
@@ -121,11 +126,14 @@ export default function ItemScreen() {
       unit: form.unit.trim() || 'pcs',
       minQuantity,
       notes: form.notes.trim(),
+      hiddenFrom: form.hiddenFrom,
     };
     if (existing) updateItem(existing.id, input);
     else addItem(input);
     successFeedback();
-    toast({ message: `${input.emoji} ${input.name} ${existing ? 'updated' : 'added to your home'}` });
+    toast({
+      message: `${input.emoji} ${existing ? t.itemForm.updated(input.name) : t.itemForm.added(input.name)}`,
+    });
     router.back();
   }
 
@@ -140,8 +148,8 @@ export default function ItemScreen() {
     removeItem(existing.id);
     router.back();
     toast({
-      message: `${existing.emoji} ${existing.name} removed`,
-      actionLabel: 'Undo',
+      message: `${existing.emoji} ${t.itemForm.removed(existing.name)}`,
+      actionLabel: t.common.undo,
       onAction: () => restoreItem(existing),
     });
   }
@@ -151,7 +159,7 @@ export default function ItemScreen() {
 
   return (
     <ThemedView style={styles.flex}>
-      <Stack.Screen options={{ title: isNew ? 'Add to my home' : 'Edit item' }} />
+      <Stack.Screen options={{ title: isNew ? t.itemForm.newTitle : t.itemForm.editTitle }} />
       <KeyboardAvoidingView behavior="padding" style={styles.flex}>
         <ScrollView
           contentContainerStyle={styles.content}
@@ -166,13 +174,13 @@ export default function ItemScreen() {
                 setShowEmojis((v) => !v);
               }}
               accessibilityRole="button"
-              accessibilityLabel="Change icon">
+              accessibilityLabel={t.itemForm.changeIcon}>
               <Animated.View key={form.emoji} entering={ZoomIn.springify()}>
                 <ItemAvatar emoji={form.emoji} priority={form.priority} size={88} />
               </Animated.View>
             </PressScale>
             <ThemedText type="small" themeColor="textSecondary">
-              {showEmojis ? 'Pick an icon' : 'Tap to change icon'}
+              {showEmojis ? t.itemForm.pickIcon : t.itemForm.tapToChangeIcon}
             </ThemedText>
           </View>
 
@@ -203,13 +211,13 @@ export default function ItemScreen() {
 
           {/* Quick picks */}
           {isNew && (
-            <Section title="Quick pick" hint="Tap one to fill everything in for you">
+            <Section title={t.itemForm.quickPick} hint={t.itemForm.quickPickHint}>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.quickRow}
                 style={styles.bleed}>
-                {QUICK_ADD.map((preset) => (
+                {quickAdd.map((preset) => (
                   <PressScale
                     key={preset.name}
                     scaleTo={0.92}
@@ -231,18 +239,18 @@ export default function ItemScreen() {
             </Section>
           )}
 
-          <Section title="What is it?">
+          <Section title={t.itemForm.whatIsIt}>
             <TextInput
               value={form.name}
               onChangeText={setName}
-              placeholder="e.g. Cooking gas, Bed sheets, Birthday cake"
+              placeholder={t.itemForm.namePlaceholder}
               placeholderTextColor={theme.textSecondary}
               style={[inputStyle, styles.nameInput]}
               autoCapitalize="sentences"
             />
           </Section>
 
-          <Section title="How important is it?">
+          <Section title={t.itemForm.howImportant}>
             {PRIORITIES.map((p) => {
               const meta = PriorityMeta[p];
               const selected = form.priority === p;
@@ -283,7 +291,13 @@ export default function ItemScreen() {
             })}
           </Section>
 
-          <Section title="How much do you have now?">
+          <SurprisePicker
+            title={form.priority === 3 ? t.itemForm.isSurprise : t.itemForm.keepSurprise}
+            value={form.hiddenFrom}
+            onChange={(hiddenFrom) => set('hiddenFrom', hiddenFrom)}
+          />
+
+          <Section title={t.itemForm.howMuch}>
             <Stepper
               value={form.quantity}
               suffix={unitLabel}
@@ -314,7 +328,7 @@ export default function ItemScreen() {
                     <ThemedText
                       type="smallBold"
                       style={{ color: selected ? theme.background : theme.text }}>
-                      {unit === 'pcs' ? 'pieces' : unit}
+                      {t.units[unit] ?? unit}
                     </ThemedText>
                   </PressScale>
                 );
@@ -323,8 +337,8 @@ export default function ItemScreen() {
           </Section>
 
           <Section
-            title="Remind me when it goes below"
-            hint="It will appear on your shopping list when you have less than this.">
+            title={t.itemForm.remindBelow}
+            hint={t.itemForm.remindHint}>
             <Stepper
               value={form.minQuantity}
               suffix={unitLabel}
@@ -333,18 +347,18 @@ export default function ItemScreen() {
             />
           </Section>
 
-          <Section title="Extra details" hint="Optional">
+          <Section title={t.itemForm.extra} hint={t.common.optional}>
             <TextInput
               value={form.category}
               onChangeText={(v) => set('category', v)}
-              placeholder="Room or group, e.g. Kitchen, Bedroom"
+              placeholder={t.itemForm.categoryPlaceholder}
               placeholderTextColor={theme.textSecondary}
               style={inputStyle}
             />
             <TextInput
               value={form.notes}
               onChangeText={(v) => set('notes', v)}
-              placeholder="Notes, e.g. which brand or shop"
+              placeholder={t.itemForm.notesPlaceholder}
               placeholderTextColor={theme.textSecondary}
               style={[inputStyle, styles.notes]}
               multiline
@@ -368,14 +382,14 @@ export default function ItemScreen() {
               accessibilityRole="button"
               style={styles.saveButton}>
               <ThemedText style={styles.saveText}>
-                {isNew ? '✓  Add to my home' : '✓  Save changes'}
+                {isNew ? t.itemForm.add : t.itemForm.save}
               </ThemedText>
             </PressScale>
 
             {existing && (
               <PressScale onPress={remove} accessibilityRole="button" style={styles.deleteButton}>
                 <ThemedText style={{ color: StatusMeta.out.color, fontWeight: 600 }}>
-                  🗑  Remove this item
+                  {t.itemForm.remove}
                 </ThemedText>
               </PressScale>
             )}
@@ -414,13 +428,14 @@ function Stepper({
   onStep: (delta: number) => void;
 }) {
   const theme = useTheme();
+  const t = useT();
   return (
     <View style={[styles.stepper, { backgroundColor: theme.backgroundElement }]}>
       <PressScale
         scaleTo={0.85}
         onPress={() => onStep(-1)}
         style={[styles.stepButton, { backgroundColor: theme.backgroundSelected }]}
-        accessibilityLabel="Less">
+        accessibilityLabel={t.itemForm.less}>
         <ThemedText style={styles.stepLabel}>−</ThemedText>
       </PressScale>
       <View style={styles.stepValue}>
@@ -441,7 +456,7 @@ function Stepper({
         scaleTo={0.85}
         onPress={() => onStep(1)}
         style={[styles.stepButton, styles.stepButtonPrimary]}
-        accessibilityLabel="More">
+        accessibilityLabel={t.itemForm.more}>
         <ThemedText style={[styles.stepLabel, styles.white]}>+</ThemedText>
       </PressScale>
     </View>

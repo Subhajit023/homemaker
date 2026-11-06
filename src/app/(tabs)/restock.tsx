@@ -8,6 +8,7 @@ import Animated, {
   ZoomIn,
 } from 'react-native-reanimated';
 
+import { SurpriseTag } from '@/components/family/surprise';
 import { ItemAvatar } from '@/components/inventory/pill';
 import { TabScreen } from '@/components/inventory/tab-screen';
 import { ThemedText } from '@/components/themed-text';
@@ -27,9 +28,13 @@ import {
 import type { Item } from '@/features/inventory/types';
 import { useTheme } from '@/hooks/use-theme';
 import { pressFeedback, successFeedback } from '@/lib/haptics';
+import { strings, useT } from '@/i18n';
 
-function buildShareText(items: Item[]) {
-  const lines = ['🛒 Shopping list', ''];
+/** Shopping list as text. Surprise items are left out so a shared list can't spoil them. */
+function buildShareText(allItems: Item[]) {
+  const items = allItems.filter((item) => item.hiddenFrom.length === 0);
+  const secret = allItems.length - items.length;
+  const lines = [strings().shopping.shareTitle, ''];
   for (const priority of PRIORITIES) {
     const group = items.filter((item) => item.priority === priority);
     if (group.length === 0) continue;
@@ -39,11 +44,13 @@ function buildShareText(items: Item[]) {
     }
     lines.push('');
   }
+  if (secret > 0) lines.push(strings().shopping.secretNotShown(secret));
   return lines.join('\n').trim();
 }
 
 export default function ShoppingScreen() {
   const theme = useTheme();
+  const t = useT();
   const { items } = useInventory();
   const needed = items.filter((item) => getStatus(item) !== 'ok').sort(compareByUrgency);
 
@@ -52,24 +59,22 @@ export default function ShoppingScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.flex}>
-            <ThemedText style={styles.title}>Shopping list</ThemedText>
+            <ThemedText style={styles.title}>{t.shopping.title}</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {needed.length === 0
-                ? 'Nothing to buy right now.'
-                : `${needed.length} thing${needed.length === 1 ? '' : 's'} to buy. Most important first.`}
+              {needed.length === 0 ? t.shopping.nothingNow : t.shopping.toBuy(needed.length)}
             </ThemedText>
           </View>
           {needed.length > 0 && (
             <PressScale
               scaleTo={0.92}
               accessibilityRole="button"
-              accessibilityLabel="Share shopping list"
+              accessibilityLabel={t.shopping.shareLabel}
               onPress={() => {
                 pressFeedback();
                 Share.share({ message: buildShareText(needed) }).catch(() => {});
               }}
               style={[styles.shareButton, { backgroundColor: theme.backgroundElement }]}>
-              <ThemedText type="smallBold">📤 Share</ThemedText>
+              <ThemedText type="smallBold">{t.shopping.share}</ThemedText>
             </PressScale>
           )}
         </View>
@@ -77,10 +82,9 @@ export default function ShoppingScreen() {
         {needed.length === 0 ? (
           <Animated.View entering={ZoomIn.springify()} style={styles.empty}>
             <ThemedText style={styles.emptyEmoji}>🎉</ThemedText>
-            <ThemedText style={styles.emptyTitle}>All stocked up!</ThemedText>
+            <ThemedText style={styles.emptyTitle}>{t.shopping.allStocked}</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.center}>
-              Your home has everything it needs. Things that run low will show up here
-              automatically.
+              {t.shopping.allStockedText}
             </ThemedText>
           </Animated.View>
         ) : (
@@ -111,7 +115,7 @@ export default function ShoppingScreen() {
               );
             })}
             <ThemedText type="small" themeColor="textSecondary" style={styles.center}>
-              Tick the circle once you’ve bought something.
+              {t.shopping.tickHint}
             </ThemedText>
           </>
         )}
@@ -122,6 +126,7 @@ export default function ShoppingScreen() {
 
 function ShoppingRow({ item }: { item: Item }) {
   const theme = useTheme();
+  const t = useT();
   const toast = useToast();
   const { setQuantity } = useInventory();
   const [ticked, setTicked] = useState(false);
@@ -136,8 +141,8 @@ function ShoppingRow({ item }: { item: Item }) {
     setTimeout(() => {
       setQuantity(item.id, item.minQuantity);
       toast({
-        message: `${item.emoji} ${item.name} marked as bought`,
-        actionLabel: 'Undo',
+        message: `${item.emoji} ${t.shopping.markedBought(item.name)}`,
+        actionLabel: t.common.undo,
         onAction: () => setQuantity(item.id, previous),
       });
     }, 350);
@@ -159,9 +164,9 @@ function ShoppingRow({ item }: { item: Item }) {
             {item.name}
           </ThemedText>
           <ThemedText type="small" style={{ color }}>
-            Buy {formatAmount(getShortfall(item), item.unit)}
+            {t.shopping.buy(formatAmount(getShortfall(item), item.unit))}
             <ThemedText type="small" themeColor="textSecondary">
-              {'  ·  '}have {formatAmount(item.quantity, item.unit)}
+              {'  ·  '}{t.shopping.have(formatAmount(item.quantity, item.unit))}
             </ThemedText>
           </ThemedText>
           {item.notes ? (
@@ -169,6 +174,7 @@ function ShoppingRow({ item }: { item: Item }) {
               📝 {item.notes}
             </ThemedText>
           ) : null}
+          <SurpriseTag hiddenFrom={item.hiddenFrom} />
         </View>
       </PressScale>
 
@@ -178,7 +184,7 @@ function ShoppingRow({ item }: { item: Item }) {
         onPress={markBought}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: ticked }}
-        accessibilityLabel={`Mark ${item.name} as bought`}
+        accessibilityLabel={t.shopping.markAsBought(item.name)}
         style={[
           styles.check,
           ticked

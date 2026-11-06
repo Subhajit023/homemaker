@@ -1,35 +1,65 @@
+import { strings } from '@/i18n';
+
 import type { Item, Priority, StockStatus } from './types';
 
 export const PRIORITIES: Priority[] = [1, 2, 3];
 
+/** Colours/emoji per priority; labels come from the current language. */
 export const PriorityMeta: Record<
   Priority,
-  { label: string; emoji: string; description: string; color: string }
+  { readonly label: string; emoji: string; readonly description: string; color: string }
 > = {
   1: {
-    label: 'Must-haves',
+    get label() {
+      return strings().priority[1].label;
+    },
     emoji: '⚡',
-    description: 'Bills, fuel and daily food. Never let these run out.',
+    get description() {
+      return strings().priority[1].description;
+    },
     color: '#208AEF',
   },
   2: {
-    label: 'Home needs',
+    get label() {
+      return strings().priority[2].label;
+    },
     emoji: '🛋️',
-    description: 'Bedding, furnishing and gadgets around the house.',
+    get description() {
+      return strings().priority[2].description;
+    },
     color: '#12A594',
   },
   3: {
-    label: 'Special moments',
+    get label() {
+      return strings().priority[3].label;
+    },
     emoji: '🎁',
-    description: 'Birthdays, anniversaries, gifts and treats.',
+    get description() {
+      return strings().priority[3].description;
+    },
     color: '#8E4EC6',
   },
 };
 
-export const StatusMeta: Record<StockStatus, { label: string; color: string }> = {
-  out: { label: 'All gone', color: '#E5484D' },
-  low: { label: 'Running low', color: '#E2860C' },
-  ok: { label: 'Plenty', color: '#30A46C' },
+export const StatusMeta: Record<StockStatus, { readonly label: string; color: string }> = {
+  out: {
+    get label() {
+      return strings().status.out;
+    },
+    color: '#E5484D',
+  },
+  low: {
+    get label() {
+      return strings().status.low;
+    },
+    color: '#E2860C',
+  },
+  ok: {
+    get label() {
+      return strings().status.ok;
+    },
+    color: '#30A46C',
+  },
 };
 
 export function getStatus(item: Pick<Item, 'quantity' | 'minQuantity'>): StockStatus {
@@ -41,8 +71,8 @@ export function getStatus(item: Pick<Item, 'quantity' | 'minQuantity'>): StockSt
 export function getStatusLabel(item: Item) {
   const status = getStatus(item);
   if (item.priority === 3) {
-    if (status === 'ok') return 'Ready';
-    if (status === 'out') return 'To get';
+    if (status === 'ok') return strings().status.ready;
+    if (status === 'out') return strings().status.toGet;
   }
   return StatusMeta[status].label;
 }
@@ -85,36 +115,38 @@ export const EMOJI_CHOICES = [
   '⚡', '🔥', '⛽', '💧', '🥦', '🍅', '🥔', '🧅', '🍎', '🍌', '🍚', '🌾',
   '🥛', '🥚', '🍞', '🧈', '🫒', '🧂', '☕', '🍵', '🍪', '🧼', '🧴', '🪥',
   '🧻', '🧺', '💊', '🛏️', '🛋️', '🪟', '🔌', '💡', '🔋', '📱', '🎂', '🎁',
-  '💐', '🎉', '👕', '👟', '🐶', '📦',
+  '💐', '🎉', '👕', '👟', '🐶', '🏍️', '🛵', '🚲', '🚗', '🔧', '📦',
 ];
 
 const EMOJI_KEYWORDS: [RegExp, string][] = [
-  [/electric|power|meter/i, '⚡'],
-  [/gas|lpg|cylinder/i, '🔥'],
-  [/petrol|diesel|fuel/i, '⛽'],
+  [/electric|power|meter|বিদ্যুৎ|কারেন্ট|बिजली/i, '⚡'],
+  [/gas|lpg|cylinder|গ্যাস|সিলিন্ডার|गैस|सिलेंडर/i, '🔥'],
+  [/petrol|diesel|fuel|পেট্রোল|ডিজেল|पेट्रोल|डीज़ल|डीजल/i, '⛽'],
+  [/helmet|bike|motorcycle/i, '🏍️'],
+  [/tyre|tire|engine oil|service/i, '🔧'],
   [/water/i, '💧'],
-  [/vegetable|veggie|sabzi/i, '🥦'],
+  [/vegetable|veggie|sabzi|সবজি|सब्ज़ी|सब्जी/i, '🥦'],
   [/tomato/i, '🍅'],
   [/potato/i, '🥔'],
   [/onion/i, '🧅'],
   [/fruit|apple/i, '🍎'],
   [/banana/i, '🍌'],
-  [/rice/i, '🍚'],
+  [/rice|চাল|चावल/i, '🍚'],
   [/flour|atta|wheat|dal|lentil/i, '🌾'],
-  [/milk/i, '🥛'],
-  [/egg/i, '🥚'],
+  [/milk|দুধ|दूध/i, '🥛'],
+  [/egg|ডিম|अंडा|अंडे/i, '🥚'],
   [/bread/i, '🍞'],
   [/butter|ghee/i, '🧈'],
   [/oil/i, '🫒'],
   [/salt|spice|masala/i, '🧂'],
   [/coffee/i, '☕'],
-  [/tea/i, '🍵'],
+  [/tea|চা|चाय/i, '🍵'],
   [/biscuit|snack|cookie/i, '🍪'],
   [/soap|detergent|wash/i, '🧼'],
   [/shampoo|lotion/i, '🧴'],
   [/tooth/i, '🪥'],
   [/tissue|toilet/i, '🧻'],
-  [/medicine|tablet|pill/i, '💊'],
+  [/medicine|tablet|pill|ওষুধ|दवा/i, '💊'],
   [/mattress|bed|sheet|pillow|blanket/i, '🛏️'],
   [/sofa|cushion/i, '🛋️'],
   [/curtain|window/i, '🪟'],
@@ -122,9 +154,9 @@ const EMOJI_KEYWORDS: [RegExp, string][] = [
   [/bulb|light/i, '💡'],
   [/battery/i, '🔋'],
   [/phone/i, '📱'],
-  [/cake|birthday/i, '🎂'],
-  [/gift|present|anniversary/i, '🎁'],
-  [/flower/i, '💐'],
+  [/cake|birthday|কেক|জন্মদিন|केक|जन्मदिन/i, '🎂'],
+  [/gift|present|anniversary|উপহার|বিবাহবার্ষিকী|तोहफ़ा|तोहफा|उपहार|सालगिरह/i, '🎁'],
+  [/flower|ফুল|फूल/i, '💐'],
   [/party|celebrat/i, '🎉'],
 ];
 

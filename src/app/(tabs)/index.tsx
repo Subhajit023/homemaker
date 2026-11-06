@@ -5,6 +5,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { ItemRow } from '@/components/inventory/item-row';
 import { ProgressBar } from '@/components/inventory/progress-bar';
 import { TabScreen } from '@/components/inventory/tab-screen';
+import { FamilyBanner, FamilyButton } from '@/components/family/family-button';
+import { SharingSummary } from '@/components/sharing/sharing-summary';
+import { WisdomCard } from '@/components/wisdom-card';
 import { ThemedText } from '@/components/themed-text';
 import { PressScale } from '@/components/ui/press-scale';
 import { BottomTabInset, Spacing } from '@/constants/theme';
@@ -19,6 +22,8 @@ import {
 import type { Item, StockStatus } from '@/features/inventory/types';
 import { useTheme } from '@/hooks/use-theme';
 import { pressFeedback, tapFeedback } from '@/lib/haptics';
+import { LanguageButton } from '@/components/language-button';
+import { locale, strings, useT } from '@/i18n';
 
 const PREVIEW_LIMIT = 4;
 
@@ -30,16 +35,18 @@ function summarize(items: Item[]) {
 
 function greeting() {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  const words = strings().home;
+  if (hour < 12) return words.morning;
+  if (hour < 17) return words.afternoon;
+  return words.evening;
 }
 
 function heroMessage(percent: number, toBuy: number) {
-  if (toBuy === 0) return 'Everything is stocked. Nice work! 🎉';
-  if (percent >= 80) return `Almost there, just ${toBuy} thing${toBuy === 1 ? '' : 's'} to pick up.`;
-  if (percent >= 50) return `${toBuy} things are running low. Time for a shopping trip?`;
-  return `${toBuy} things need buying soon.`;
+  const words = strings().home;
+  if (toBuy === 0) return words.heroAllDone;
+  if (percent >= 80) return words.heroAlmost(toBuy);
+  if (percent >= 50) return words.heroHalf(toBuy);
+  return words.heroLow(toBuy);
 }
 
 /** Staggered fade-in so the dashboard builds up section by section. */
@@ -49,12 +56,13 @@ function enter(index: number) {
 
 export default function DashboardScreen() {
   const theme = useTheme();
+  const t = useT();
   const { items } = useInventory();
   const overall = summarize(items);
   const toBuy = overall.low + overall.out;
   const percent = overall.total ? Math.round((overall.ok / overall.total) * 100) : 100;
   const urgent = items.filter((item) => getStatus(item) !== 'ok').sort(compareByUrgency);
-  const today = new Date().toLocaleDateString(undefined, {
+  const today = new Date().toLocaleDateString(locale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -66,15 +74,19 @@ export default function DashboardScreen() {
         {/* Greeting */}
         <Animated.View entering={enter(0)} style={styles.header}>
           <View style={styles.flex}>
-            <ThemedText type="small" themeColor="textSecondary">
-              {today}
-            </ThemedText>
+            <View style={styles.dateRow}>
+              <ThemedText type="small" themeColor="textSecondary">
+                {today}
+              </ThemedText>
+              <LanguageButton />
+            </View>
             <ThemedText style={styles.greeting}>{greeting()} 👋</ThemedText>
           </View>
+          <FamilyButton />
           <PressScale
             scaleTo={0.9}
             accessibilityRole="button"
-            accessibilityLabel="Add an item"
+            accessibilityLabel={t.home.addItem}
             onPress={() => {
               pressFeedback();
               router.push({ pathname: '/item/[id]', params: { id: 'new' } });
@@ -83,6 +95,8 @@ export default function DashboardScreen() {
             <ThemedText style={styles.addCircleText}>＋</ThemedText>
           </PressScale>
         </Animated.View>
+
+        <FamilyBanner />
 
         {/* Hero: how stocked is the home */}
         <Animated.View entering={enter(1)}>
@@ -93,8 +107,8 @@ export default function DashboardScreen() {
               router.navigate('/restock');
             }}
             style={styles.hero}>
-            <ThemedText style={styles.heroLabel}>Your home is</ThemedText>
-            <ThemedText style={styles.heroPercent}>{percent}% stocked</ThemedText>
+            <ThemedText style={styles.heroLabel}>{t.home.yourHomeIs}</ThemedText>
+            <ThemedText style={styles.heroPercent}>{t.home.stocked(percent)}</ThemedText>
             <ProgressBar
               value={percent / 100}
               color="#ffffff"
@@ -104,7 +118,7 @@ export default function DashboardScreen() {
             <ThemedText style={styles.heroMessage}>{heroMessage(percent, toBuy)}</ThemedText>
             {toBuy > 0 && (
               <View style={styles.heroButton}>
-                <ThemedText style={styles.heroButtonText}>🛒 Open shopping list</ThemedText>
+                <ThemedText style={styles.heroButtonText}>{t.home.openShopping}</ThemedText>
               </View>
             )}
           </PressScale>
@@ -117,12 +131,27 @@ export default function DashboardScreen() {
           <StatusTile status="ok" count={overall.ok} emoji="✅" />
         </Animated.View>
 
+        {/* Proverb of the day */}
+        <Animated.View entering={enter(3)}>
+          <WisdomCard toBuy={toBuy} />
+        </Animated.View>
+
+        {/* Plan & share */}
+        <Animated.View entering={enter(3)} style={styles.section}>
+          <SectionHeader
+            title={t.home.planShare}
+            action={t.home.open}
+            onAction={() => router.navigate('/shared')}
+          />
+          <SharingSummary />
+        </Animated.View>
+
         {/* Running out */}
         {urgent.length > 0 && (
           <Animated.View entering={enter(3)} style={styles.section}>
             <SectionHeader
-              title="Running out"
-              action={urgent.length > PREVIEW_LIMIT ? `See all ${urgent.length}` : undefined}
+              title={t.home.runningOut}
+              action={urgent.length > PREVIEW_LIMIT ? t.home.seeAll(urgent.length) : undefined}
               onAction={() => router.navigate('/restock')}
             />
             {urgent.slice(0, PREVIEW_LIMIT).map((item) => (
@@ -133,7 +162,7 @@ export default function DashboardScreen() {
 
         {/* Priority groups */}
         <Animated.View entering={enter(4)} style={styles.section}>
-          <SectionHeader title="Your home at a glance" />
+          <SectionHeader title={t.home.atAGlance} />
           {PRIORITIES.map((priority) => {
             const meta = PriorityMeta[priority];
             const group = summarize(items.filter((item) => item.priority === priority));
@@ -157,7 +186,7 @@ export default function DashboardScreen() {
                   <View style={styles.groupTitleRow}>
                     <ThemedText style={styles.groupTitle}>{meta.label}</ThemedText>
                     <ThemedText type="small" themeColor="textSecondary">
-                      {group.ok} of {group.total} ›
+                      {t.home.ofTotal(group.ok, group.total)}
                     </ThemedText>
                   </View>
                   <ThemedText type="small" themeColor="textSecondary" numberOfLines={1}>
@@ -170,7 +199,7 @@ export default function DashboardScreen() {
                   <ThemedText
                     type="small"
                     style={{ color: needs ? StatusMeta.low.color : StatusMeta.ok.color }}>
-                    {needs ? `${needs} to buy` : 'All good ✓'}
+                    {needs ? t.home.toBuy(needs) : t.home.allGood}
                   </ThemedText>
                 </View>
               </PressScale>
@@ -184,9 +213,7 @@ export default function DashboardScreen() {
           style={[styles.tip, { backgroundColor: theme.backgroundElement }]}>
           <ThemedText style={styles.tipEmoji}>💡</ThemedText>
           <ThemedText type="small" themeColor="textSecondary" style={styles.flex}>
-            Tap <ThemedText type="smallBold">＋</ThemedText> when you buy something and{' '}
-            <ThemedText type="smallBold">−</ThemedText> when you use it up. We’ll tell you what to
-            buy next.
+            {t.home.tip}
           </ThemedText>
         </Animated.View>
       </ScrollView>
@@ -247,6 +274,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   greeting: {
     fontSize: 28,

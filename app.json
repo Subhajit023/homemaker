@@ -33,7 +33,16 @@
           "imageWidth": 76
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Homemaker to use your photos for profile pictures and family board posts.",
+          "cameraPermission": "Allow Homemaker to use the camera for profile pictures and family board posts.",
+          "microphonePermission": false
+        }
+      ],
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

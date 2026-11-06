@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 
+import { SurpriseTag } from '@/components/family/surprise';
 import { ItemAvatar, StatusTag } from '@/components/inventory/pill';
 import { ProgressBar } from '@/components/inventory/progress-bar';
 import { ThemedText } from '@/components/themed-text';
@@ -12,10 +13,12 @@ import { formatAmount, getStatus, getStockLevel, StatusMeta } from '@/features/i
 import type { Item } from '@/features/inventory/types';
 import { useTheme } from '@/hooks/use-theme';
 import { tapFeedback } from '@/lib/haptics';
+import { useT } from '@/i18n';
 
 /** A friendly card for one item: icon, amount left, stock gauge and +/− buttons. */
 export function ItemRow({ item }: { item: Item }) {
   const theme = useTheme();
+  const t = useT();
   const { adjustQuantity } = useInventory();
   const statusColor = StatusMeta[getStatus(item)].color;
 
@@ -34,7 +37,7 @@ export function ItemRow({ item }: { item: Item }) {
         scaleTo={0.98}
         style={styles.main}
         accessibilityRole="button"
-        accessibilityHint="Opens details"
+        accessibilityHint={t.item.opensDetails}
         onPress={() => router.push({ pathname: '/item/[id]', params: { id: item.id } })}>
         <ItemAvatar emoji={item.emoji} priority={item.priority} />
         <View style={styles.info}>
@@ -43,9 +46,10 @@ export function ItemRow({ item }: { item: Item }) {
           </ThemedText>
           <View style={styles.metaRow}>
             <ThemedText type="small" themeColor="textSecondary">
-              {formatAmount(item.quantity, item.unit)} left
+              {t.item.left(formatAmount(item.quantity, item.unit))}
             </ThemedText>
             <StatusTag item={item} />
+            <SurpriseTag hiddenFrom={item.hiddenFrom} compact />
           </View>
           <ProgressBar value={getStockLevel(item)} color={statusColor} height={5} />
         </View>
@@ -56,13 +60,13 @@ export function ItemRow({ item }: { item: Item }) {
           label="−"
           disabled={item.quantity <= 0}
           onPress={() => change(-1)}
-          accessibilityLabel={`Used one ${item.name}`}
+          accessibilityLabel={t.item.usedOne(item.name)}
         />
         <StepButton
           label="+"
           primary
           onPress={() => change(1)}
-          accessibilityLabel={`Added one ${item.name}`}
+          accessibilityLabel={t.item.addedOne(item.name)}
         />
       </View>
     </Animated.View>

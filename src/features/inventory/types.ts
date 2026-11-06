@@ -16,7 +16,9 @@ export type Item = {
   /** Minimum amount to keep on hand. Below this the item needs restocking. */
   minQuantity: number;
   notes: string;
+  /** Member ids this item is kept secret from (surprises). */
+  hiddenFrom: string[];
   updatedAt: number;
 };
 
-export type ItemInput = Omit<Item, 'id' | 'updatedAt'>;
+export type ItemInput = Omit<Item, 'id' | 'updatedAt' | 'hiddenFrom'> & { hiddenFrom?: string[] };

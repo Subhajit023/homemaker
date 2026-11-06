@@ -14,6 +14,7 @@ import { compareByUrgency, PRIORITIES, PriorityMeta } from '@/features/inventory
 import type { Priority } from '@/features/inventory/types';
 import { useTheme } from '@/hooks/use-theme';
 import { pressFeedback, tapFeedback } from '@/lib/haptics';
+import { useT } from '@/i18n';
 
 function parsePriority(value: string | undefined): Priority | null {
   return value === '1' || value === '2' || value === '3' ? (Number(value) as Priority) : null;
@@ -21,6 +22,7 @@ function parsePriority(value: string | undefined): Priority | null {
 
 export default function InventoryScreen() {
   const theme = useTheme();
+  const t = useT();
   const insets = useSafeAreaInsets();
   const { items } = useInventory();
   const params = useLocalSearchParams<{ priority?: string }>();
@@ -55,9 +57,9 @@ export default function InventoryScreen() {
         contentContainerStyle={styles.content}
         stickyHeaderIndices={[1]}>
         <View style={styles.titleBlock}>
-          <ThemedText style={styles.title}>My items</ThemedText>
+          <ThemedText style={styles.title}>{t.inventory.title}</ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
-            {items.length} things in your home. Tap one to see or change details.
+            {t.inventory.subtitle(items.length)}
           </ThemedText>
         </View>
 
@@ -68,14 +70,14 @@ export default function InventoryScreen() {
             <TextInput
               value={query}
               onChangeText={setQuery}
-              placeholder="Search, e.g. milk or bedroom"
+              placeholder={t.inventory.search}
               placeholderTextColor={theme.textSecondary}
               style={[styles.searchInput, { color: theme.text }]}
               autoCorrect={false}
               returnKeyType="search"
             />
             {query.length > 0 && (
-              <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel="Clear search">
+              <Pressable onPress={() => setQuery('')} hitSlop={10} accessibilityLabel={t.inventory.clearSearch}>
                 <ThemedText themeColor="textSecondary" style={styles.clear}>
                   ✕
                 </ThemedText>
@@ -87,7 +89,7 @@ export default function InventoryScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chips}>
-            <Chip label="🏠 Everything" selected={filter === null} onPress={() => selectFilter(null)} />
+            <Chip label={t.inventory.everything} selected={filter === null} onPress={() => selectFilter(null)} />
             {PRIORITIES.map((priority) => {
               const meta = PriorityMeta[priority];
               return (
@@ -108,12 +110,10 @@ export default function InventoryScreen() {
             <Animated.View entering={FadeIn} style={styles.empty}>
               <ThemedText style={styles.emptyEmoji}>{q ? '🤔' : '📦'}</ThemedText>
               <ThemedText style={styles.emptyTitle}>
-                {q ? 'Nothing found' : 'Nothing here yet'}
+                {q ? t.inventory.nothingFound : t.inventory.nothingYet}
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.center}>
-                {q
-                  ? `We couldn’t find “${query.trim()}”. Try another word or add it as a new item.`
-                  : 'Tap the ＋ button to add your first item.'}
+                {q ? t.inventory.notFound(query.trim()) : t.inventory.addFirst}
               </ThemedText>
             </Animated.View>
           ) : (
@@ -150,13 +150,13 @@ export default function InventoryScreen() {
         <PressScale
           scaleTo={0.9}
           accessibilityRole="button"
-          accessibilityLabel="Add an item"
+          accessibilityLabel={t.home.addItem}
           onPress={() => {
             pressFeedback();
             router.push({ pathname: '/item/[id]', params: { id: 'new' } });
           }}
           style={styles.fab}>
-          <ThemedText style={styles.fabText}>＋ Add item</ThemedText>
+          <ThemedText style={styles.fabText}>{t.inventory.addItem}</ThemedText>
         </PressScale>
       </Animated.View>
     </TabScreen>
