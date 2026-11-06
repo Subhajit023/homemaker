@@ -1,56 +1,45 @@
-# Welcome to your Expo app 👋
+# Homemaker 🏠
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A friendly household stock tracker. Keep an eye on everything your home runs on, from electricity, gas and groceries to bed sheets and birthday gifts, and always know what to buy next.
 
-## Get started
+Built with [Expo](https://expo.dev) (SDK 58), React Native and Expo Router.
 
-1. Install dependencies
+## Features
 
-   ```bash
-   npm install
-   ```
+- **Home dashboard:** see how stocked your home is at a glance, what is running out, and how each priority group is doing.
+- **Three priorities:**
+  - ⚡ **Must-haves:** bills, fuel and daily food (electricity, gas, petrol, vegetables…)
+  - 🛋️ **Home needs:** bedding, furnishing and gadgets (mattress, sofa covers, chargers, curtains…)
+  - 🎁 **Special moments:** birthdays, anniversaries, gifts and treats
+- **My items:** search, filter by priority, and tap ＋ / − as you buy or use things.
+- **Shopping list:** everything below its "remind me" level, most important first. Tick items off (with undo) or share the list via WhatsApp/SMS.
+- **Quick add:** one-tap presets, auto-suggested emoji icons, plain-language fields.
+- Saved on the device, with light and dark mode, haptic feedback and smooth animations.
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Getting started
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Then open the app on your phone with Expo Go (scan the QR code), or in an Android emulator / iOS simulator.
 
-### Other setup steps
+## Project structure
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```
+src/
+  app/                    Screens (Expo Router)
+    (tabs)/               Home, My items, Shopping tabs
+    item/[id].tsx         Add / edit item screen
+  components/             UI components (item cards, toast, press animation…)
+  features/inventory/     Data model, store, priorities and sample data
+  lib/                    Helpers (haptics)
+```
 
-## Learn more
+## Scripts
 
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+```bash
+npx expo lint      # lint
+npx tsc --noEmit   # typecheck
+```
